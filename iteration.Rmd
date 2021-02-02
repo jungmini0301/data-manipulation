@@ -1,0 +1,130 @@
+---
+title: "Iteration"
+author: "Jungmin Chang"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    toc: true
+    toc_float: false
+    number_sections: false
+    toc_depth: 3
+    keep_md: false
+editor_options: 
+  chunk_output_type: console
+---
+
+
+```{r include = FALSE}
+# ---- setup ------------------------------------------------------------------
+knitr::opts_chunk$set(
+  echo = TRUE,          # show code
+  warning = FALSE,       # don't show warnings
+  message = FALSE,       # don't show messages (less serious warnings)
+  cache = FALSE,         # set to TRUE to save results from last compilation
+  fig.align = "center",   # center figures
+  fig.asp = 1,          # fig.aspect ratio
+  fig.width = 6          # fig width
+)
+
+# --- libraries ----------------------------------------------------------------
+library("gapminder")
+library("dplyr")
+library("tibble")
+maxit=1000
+```
+
+#### For Loop - computing the average of life expectancy, gdp, population in each country
+```{r}
+# cleaning r environment 
+rm(list=ls())
+
+# reading in data
+df <- gapminder 
+
+# creating unique (country, continent) pairs
+countries <- unique(gapminder[, c("country", "continent")])
+n_countries <- nrow(countries)
+
+# When working with loops, you first need to create the data structure that will store the calculated values.
+#  NAs are placed in last three columns as these are the values we will calculate.
+mean_val_loop <- data.frame(country = countries$country, continent = countries$continent, lifeExp = NA, gdpPercap = NA, pop = NA)
+
+
+# looping over unique values of the country variable 
+for(names in countries$country){ # repeat the loop over unique values 
+  mean_val_loop$lifeExp[mean_val_loop$country == names] = mean(gapminder$lifeExp[gapminder$country == names])
+  mean_val_loop$gdpPercap[mean_val_loop$country == names] = mean(gapminder$gdpPercap[gapminder$country == names])
+  mean_val_loop$pop[mean_val_loop$country == names] = mean(gapminder$pop[gapminder$country == names])
+}
+mean_val_loop
+```
+
+#### For Loop - comparing the average of life expectancy
+```{r}
+# computing the average of life expectancy and gdp per capita in each country
+df1 <- df %>%
+  group_by(country) %>%
+  summarize(avg_lifeExp = mean(lifeExp), avg_gdp = mean(gdpPercap))
+colnames(df1) <- c("country", "lifeExp", "gdp")
+head(df1)
+
+# computing the average of life expectancy and gdp per capita among 142 countries
+df1 %>% 
+  summarise(avg.lifeExp = mean(lifeExp), avg.gdp = mean(gdp))
+# the total average of life expectancy is approx. 59.5 years 
+# the total average of gdp per capita is approx. $7,215
+
+
+lowerThreshold <- 50
+upperThreshold <- 70
+
+for(names in countries$country){ 
+  tmp <- df1[df1$country == names,]
+  res <- tmp$lifeExp
+  
+  if(res < lowerThreshold){
+    cat("The average Life Expectancy in", names, "is less than", lowerThreshold, "\n") # concert to character vectors without numbering
+  }
+  else if(res > lowerThreshold && res < upperThreshold) {
+    cat("The average Life Expectancy in", names, "is between", lowerThreshold, "and", upperThreshold, "\n")
+  }
+  else if(res > upperThreshold){
+    cat("The average Life Expectancy in", names, "is greater than", upperThreshold, "\n")
+  }
+  rm(tmp)
+}
+
+
+```
+
+#### Writing a new function to compare life expectancy in a given country with average
+```{r}
+fun <- function(x,y){
+  if(x < lowerThreshold){
+    cat("The average Life Expectancy in", y, "is less than", lowerThreshold, "\n")
+  }
+  else if(x > lowerThreshold && x < upperThreshold) {
+    cat("The average Life Expectancy in", y, "is between", lowerThreshold, "and", upperThreshold, "\n")
+  }
+  else if(x > upperThreshold){
+    cat("The verage Life Expectancy in", y, "is greater than", upperThreshold, "\n")
+  }
+}
+
+fun(df1 %>%
+      select(lifeExp) %>%
+      filter(df1$country =="Afghanistan"), "Afghanistan"
+)
+
+fun(df1 %>%
+      select(lifeExp) %>%
+      filter(df1$country =="Canada"), "Canada"
+)
+
+fun(df1 %>%
+      select(lifeExp) %>%
+      filter(df1$country =="Brazil"), "Brazil"
+)
+
+
+```
